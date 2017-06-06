@@ -38,10 +38,6 @@
         (merge return-map {:style style})))))
 
 (defn use-style! [style options]
-  ;; Deref to make sure components re-render themselves when styles-in-use updates
-  ;; so that we can get rid of inline styles and use only classes as soon as possible.
-  @dom/styles-in-use
-
   (when-not (empty? style)
     (let [with-classes (:stylefy.core/with-classes options)]
 

@@ -1,6 +1,5 @@
 (ns stylefy.core
-  (:require [dommy.core :as dommy]
-            [stylefy.impl.styles :as impl-styles]
+  (:require [stylefy.impl.styles :as impl-styles]
             [stylefy.impl.dom :as dom])
   (:require-macros [reagent.ratom :refer [run!]]))
 
@@ -131,3 +130,6 @@
           (use-style sub-style))))
 
     (dom/update-styles-in-dom!)))
+
+(defn on-style-inject! [callback]
+  (dom/on-style-inject! callback))

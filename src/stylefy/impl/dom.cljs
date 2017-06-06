@@ -1,14 +1,14 @@
 (ns stylefy.impl.dom
   (:require [dommy.core :as dommy]
-            [reagent.core :as r]
             [garden.core :refer [css]]
             [garden.stylesheet :refer [at-media at-keyframes at-font-face]])
   (:require-macros [reagent.ratom :refer [run!]]))
 
-(def styles-in-use (r/atom {})) ;; style hash -> props
-(def keyframes-in-use (r/atom []))
-(def font-faces-in-use (r/atom []))
-(def custom-classes-in-use (r/atom []))
+(def styles-in-use (atom {})) ;; style hash -> props
+(def keyframes-in-use (atom []))
+(def font-faces-in-use (atom []))
+(def custom-classes-in-use (atom []))
+(def on-style-inject-callback (atom nil))
 
 (def ^:private stylefy-node-id :#_stylefy-styles_)
 (def ^:private stylefy-constant-node-id :#_stylefy-constant-styles_)
@@ -56,7 +56,9 @@
       (if (and node node-constant)
         (do (update-style-tags! node node-constant)
             (reset! dom-needs-update? false)
-            (mark-styles-added-in-dom!))
+            (mark-styles-added-in-dom!)
+            (when @on-style-inject-callback
+              (@on-style-inject-callback @styles-in-use)))
         (.error js/console "stylefy is unable to find the required <style> tags!")))))
 
 (defn- continuously-update-styles-in-dom!
@@ -128,3 +130,7 @@
     (swap! custom-classes-in-use conj custom-class-definition)
     (reset! dom-needs-update? true)
     custom-class-definition))
+
+(defn on-style-inject! [callback]
+  (assert (fn? callback) "Callback must be a function")
+  (reset! on-style-inject-callback callback))

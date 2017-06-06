@@ -184,14 +184,19 @@
 
 (defn- top-level []
   (let [active-tab (r/atom 0)]
-    (fn []
-      [:div
-       [:ul.nav.nav-pills (use-style styles/boostrap-navbar-overrides)
-        [bs-navbar-item 0 active-tab "Simple examples"]
-        [bs-navbar-item 1 active-tab "Full page example"]]
-       (case @active-tab
-         0 [simple-examples]
-         1 [full-page/full-page])])))
+    (r/create-class
+      {:component-will-mount (fn [_]
+                               (stylefy/on-style-inject!
+                                 #(do
+                                    (r/force-update-all))))
+       :render (fn []
+                 [:div
+                  [:ul.nav.nav-pills (use-style styles/boostrap-navbar-overrides)
+                   [bs-navbar-item 0 active-tab "Simple examples"]
+                   [bs-navbar-item 1 active-tab "Full page example"]]
+                  (case @active-tab
+                    0 [simple-examples]
+                    1 [full-page/full-page])])})))
 
 (defn- main []
   [top-level])
