@@ -187,8 +187,7 @@
     (r/create-class
       {:component-will-mount (fn [_]
                                (stylefy/on-style-inject!
-                                 #(do
-                                    (r/force-update-all))))
+                                 #(r/force-update-all)))
        :render (fn []
                  [:div
                   [:ul.nav.nav-pills (use-style styles/boostrap-navbar-overrides)
