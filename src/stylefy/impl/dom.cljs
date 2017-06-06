@@ -58,7 +58,7 @@
             (reset! dom-needs-update? false)
             (mark-styles-added-in-dom!)
             (when @on-style-inject-callback
-              (@on-style-inject-callback @styles-in-use)))
+              (@on-style-inject-callback)))
         (.error js/console "stylefy is unable to find the required <style> tags!")))))
 
 (defn- continuously-update-styles-in-dom!
