@@ -17,3 +17,8 @@
   (or (instance? #?(:cljs types/CSSUnit :clj garden.types.CSSUnit) value)
       (instance? #?(:cljs color/CSSColor :clj garden.color.CSSColor) value)
       (instance? #?(:cljs types/CSSFunction :clj garden.types.CSSFunction) value)))
+
+(defn warn [& msg]
+  (let [m (str/join " " msg)]
+    #?(:cljs (.warn js/console m)
+       :clj (println m))))
