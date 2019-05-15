@@ -1,8 +1,7 @@
 (ns stylefy.core
   (:require [dommy.core :as dommy]
             [stylefy.impl.styles :as impl-styles]
-            [stylefy.impl.dom :as dom])
-  (:require-macros [reagent.ratom :refer [run!]]))
+            [stylefy.impl.dom :as dom]))
 
 (defn use-style
   "Defines a style for a component by converting the given style map in to an unique CSS class,
