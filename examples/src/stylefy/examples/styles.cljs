@@ -16,7 +16,7 @@
                     :font-style "normal"})
 
 ;; Custom named classes can be created, but should only be used when working with
-;; other libraries / frameworks. Normally there is no need to create customly named classes
+;; other libraries / frameworks. Normally there is no need to create custom classes
 ;; when using stylefy.
 (stylefy/class "background-transition"
                {:transition "background-color 1s"})
@@ -72,7 +72,12 @@
                                                   {:border-radius 0}}})})
 
 (def boostrap-navbar-overrides {:background-color "#DDDDDD"
-                                ::stylefy/sub-styles {:link {:border-radius "0 !important"}}})
+                                ::stylefy/class-prefix "bootstrap-override"
+                                ::stylefy/sub-styles {:link {:font-weight "bold"}}})
+
+(def boostrap-navbar {:background-color "#DDDDDD"
+                      ::stylefy/sub-styles {:link {:font-weight "bold"}}
+                      ::stylefy/with-classes ["nav" "nav-pills"]})
 
 (def column {:padding "5px"
              :color "white"})

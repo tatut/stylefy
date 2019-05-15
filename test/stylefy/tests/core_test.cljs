@@ -8,16 +8,18 @@
             [garden.units :as units]
             [clojure.string :as str]))
 
-(def style-box {:border "1px solid black"
+(def css-props {:border "1px solid black"
                 :background-color "#FFDDDD"
                 :text-align :center
                 :padding "5px"
                 :width "150px"
-                :height "150px"
-                :stylefy.core/mode {:hover {:background-color "red"}}
-                :stylefy.core/vendors #{"moz"}
-                :stylefy.core/auto-prefix #{:border-radius}
-                :stylefy.core/sub-styles {:sub-box {:border "1px solid black"}}})
+                :height "150px"})
+
+(def style-box (merge css-props
+                      {:stylefy.core/mode {:hover {:background-color "red"}}
+                       :stylefy.core/vendors #{"moz"}
+                       :stylefy.core/auto-prefix #{:border-radius}
+                       :stylefy.core/sub-styles {:sub-box {:border "1px solid black"}}}))
 
 (deftest use-style
   (testing "Use style"
@@ -26,13 +28,7 @@
       ;; This is the first time we use this style map -> inline style shoule be returned
       (is (map? (:style return)))
       ;; Inline style does not contain namespaced keywords:
-      (is (= (:style return)
-             {:border "1px solid black"
-              :background-color "#FFDDDD"
-              :text-align :center
-              :padding "5px"
-              :width "150px"
-              :height "150px"}))))
+      (is (= (:style return) css-props))))
 
   (testing "Use style with :hover mode"
     (let [return (stylefy/use-style (merge style-box
@@ -40,13 +36,7 @@
       (is (string? (:class return)))
       (is (map? (:style return)))
       ;; Inline style does not contain namespaced keywords and it's not hidden.
-      (is (= (:style return)
-             {:border "1px solid black"
-              :background-color "#FFDDDD"
-              :text-align :center
-              :padding "5px"
-              :width "150px"
-              :height "150px"}))))
+      (is (= (:style return) css-props))))
 
   (testing "Use style with :foo mode"
     (let [return (stylefy/use-style (merge style-box
@@ -55,14 +45,7 @@
       (is (map? (:style return)))
       ;; Inline style does not contain namespaced keywords and it IS hidden, because only
       ;; certain modes can be accepted without hiding the component
-      (is (= (:style return)
-             {:border "1px solid black"
-              :background-color "#FFDDDD"
-              :text-align :center
-              :visibility "hidden"
-              :padding "5px"
-              :width "150px"
-              :height "150px"}))))
+      (is (= (:style return) (assoc css-props :visibility "hidden")))))
 
   (testing "Use style with media query"
     (let [return (stylefy/use-style (merge style-box
@@ -71,14 +54,16 @@
       (is (string? (:class return)))
       (is (map? (:style return)))
       ;; Inline style hides the component (media queries do not work as inline style)
-      (is (= (:style return)
-             {:border "1px solid black"
-              :background-color "#FFDDDD"
-              :text-align :center
-              :padding "5px"
-              :visibility "hidden"
-              :width "150px"
-              :height "150px"}))))
+      (is (= (:style return) (assoc css-props :visibility "hidden")))))
+
+  (testing "Use style with manual mode"
+    (let [return (stylefy/use-style (merge style-box
+                                           {:stylefy.core/manual [[:&:hover [:.innerbox
+                                                                             {:background-color "#999999"}]]]}))]
+      (is (string? (:class return)))
+      (is (map? (:style return)))
+      ;; Inline style hides the component (manual mode does not work as inline style)
+      (is (= (:style return) (assoc css-props :visibility "hidden")))))
 
   (testing "Use style with feature query"
     (let [return (stylefy/use-style (merge style-box
@@ -87,22 +72,23 @@
       (is (string? (:class return)))
       (is (map? (:style return)))
       ;; Inline style hides the component (feature queries do not work as inline style)
-      (is (= (:style return)
-             {:border "1px solid black"
-              :background-color "#FFDDDD"
-              :text-align :center
-              :padding "5px"
-              :visibility "hidden"
-              :width "150px"
-              :height "150px"}))))
+      (is (= (:style return) (assoc css-props :visibility "hidden")))))
 
   (testing "Use nil style"
     (let [return (stylefy/use-style nil)]
       (is (nil? return))))
 
+  (testing "Use nil style with HTML attributes"
+    (let [return (stylefy/use-style nil {:src "image.jpg" :class "myclass"})]
+      (is (= return {:src "image.jpg" :class "myclass"}))))
+
   (testing "Use empty style"
     (let [return (stylefy/use-style {})]
       (is (nil? return))))
+
+  (testing "Use empty style with HTML attributes"
+    (let [return (stylefy/use-style {} {:src "image.jpg" :class "myclass"})]
+      (is (= return {:src "image.jpg" :class "myclass"}))))
 
   (testing "Use garbage style: number"
     (try
@@ -122,8 +108,76 @@
     (let [return (stylefy/use-style style-box
                                     {::stylefy/with-classes ["dummy"]})]
       (is (string? (:class return)))
+      (is (str/includes? (:class return) "dummy"))))
+
+  (testing "Use style with HTML attributes and ::with-classes"
+    (let [attr-src "image.jpg"
+          attr-alt "fail"
+          attr-class "myclass"
+          return (stylefy/use-style style-box
+                                    {:src attr-src
+                                     :alt attr-alt
+                                     :class attr-class
+                                     ::stylefy/with-classes ["dummy"]})]
+      (is (= (:src return) attr-src))
+      (is (= (:alt return) attr-alt))
+      (is (string? (:class return)))
+      (is (str/includes? (:class return) "_stylefy_")) ;; Prefix for auto-generated class
+      (is (str/includes? (:class return) "myclass"))
+      (is (str/includes? (:class return) "dummy"))))
+
+  (testing "Use style with :class vector"
+    (let [attr-src "image.jpg"
+          attr-alt "fail"
+          attr-class ["myclass" "myclass2"]
+          return (stylefy/use-style style-box
+                                    {:src attr-src
+                                     :alt attr-alt
+                                     :class attr-class
+                                     ::stylefy/with-classes ["dummy"]})]
+      (is (= (:src return) attr-src))
+      (is (= (:alt return) attr-alt))
+      (is (string? (:class return)))
+      (is (str/includes? (:class return) "_stylefy_")) ;; Prefix for auto-generated class
+      (is (str/includes? (:class return) "myclass myclass2"))
+      (is (str/includes? (:class return) "dummy"))))
+
+  (testing "Use style with additional class names attached to it"
+    (let [attr-src "image.jpg"
+          attr-alt "fail"
+          return (stylefy/use-style (assoc style-box
+                                      ::stylefy/with-classes ["dummy"])
+                                    {:src attr-src
+                                     :alt attr-alt})]
+      (is (= (:src return) attr-src))
+      (is (= (:alt return) attr-alt))
+      (is (string? (:class return)))
+      (is (str/includes? (:class return) "_stylefy_")) ;; Prefix for auto-generated class
+      (is (str/includes? (:class return) "dummy"))))
+
+  (testing "Use style with additional class names attached to it, along with :class"
+    (let [attr-src "image.jpg"
+          attr-alt "fail"
+          return (stylefy/use-style (assoc style-box
+                                      ::stylefy/with-classes ["dummy"])
+                                    {:src attr-src
+                                     :alt attr-alt
+                                     ::stylefy/with-classes ["anotherclass"]
+                                     :class "myclass"})]
+      (is (= (:src return) attr-src))
+      (is (= (:alt return) attr-alt))
+      (is (string? (:class return)))
+      (is (str/includes? (:class return) "_stylefy_")) ;; Prefix for auto-generated class
       (is (str/includes? (:class return) "dummy"))
-      (is (= (:style style-box))))))
+      (is (str/includes? (:class return) "myclass"))
+      (is (str/includes? (:class return) "anotherclass"))))
+
+  (testing "Use style with additional HTML attribute :style definition"
+    (try
+      (stylefy/use-style {:color "blue"} {:style {:color "red"}}) ;; No point here!
+      (is false "Error was not thrown")
+      (catch js/Error e
+        (is true "Error was thrown as expected")))))
 
 (deftest garden-types
   (testing "Garden units are converted correctly"
@@ -175,6 +229,45 @@
       (is (str/includes? (:class return) "dummy"))
       (is (= (:style (get-in style-box [::stylefy/sub-styles :sub-box]))))))
 
+  (testing "Use sub-style with additional HTML attribute :style definition"
+    (try
+      (stylefy/use-sub-style style-box :sub-box {:style {:color "red"}})
+      (is false "Error was not thrown")
+      (catch js/Error e
+        (is true "Error was thrown as expected"))))
+
+  (testing "Use sub-style with HTML attributes and ::with-classes"
+    (let [attr-src "image.jpg"
+          attr-alt "fail"
+          attr-class "myclass"
+          return (stylefy/use-sub-style style-box :sub-box
+                                        {:src attr-src
+                                         :alt attr-alt
+                                         :class attr-class
+                                         ::stylefy/with-classes ["dummy"]})]
+      (is (= (:src return) attr-src))
+      (is (= (:alt return) attr-alt))
+      (is (string? (:class return)))
+      (is (str/includes? (:class return) "_stylefy_")) ;; Prefix for auto-generated class
+      (is (str/includes? (:class return) "myclass"))
+      (is (str/includes? (:class return) "dummy"))))
+
+  (testing "Use sub-style with :class vector"
+    (let [attr-src "image.jpg"
+          attr-alt "fail"
+          attr-class ["myclass" "myclass2"]
+          return (stylefy/use-sub-style style-box :sub-box
+                                        {:src attr-src
+                                         :alt attr-alt
+                                         :class attr-class
+                                         ::stylefy/with-classes ["dummy"]})]
+      (is (= (:src return) attr-src))
+      (is (= (:alt return) attr-alt))
+      (is (string? (:class return)))
+      (is (str/includes? (:class return) "_stylefy_")) ;; Prefix for auto-generated class
+      (is (str/includes? (:class return) "myclass myclass2"))
+      (is (str/includes? (:class return) "dummy"))))
+
   (testing "Use sub-style that does not exist: returns nil"
     (let [return (stylefy/use-sub-style style-box :foo)]
       (is (nil? return)))))
@@ -210,16 +303,12 @@
       (catch js/Error e
         (is true "Error was thrown as expected")))))
 
-(deftest init
-  (let [update-styles-in-dom-called (atom false)]
-    (with-redefs [;; No DOM manipulation here, just check that the function
-                  ;; was called
-                  dom/update-styles-in-dom! #(reset! update-styles-in-dom-called true)
-                  ;; No .requestAnimationFrame in Phantom,
-                  ;; use a simple function call instead
-                  dom/request-dom-update #(dom/update-styles-in-dom!)]
-                 (stylefy/init)
-                 (is (true? @update-styles-in-dom-called)))))
+(deftest dom-update-is-requested
+  (let [dom-update-requested? (atom false)]
+    (with-redefs [dom/request-asynchronous-dom-update #(reset! dom-update-requested? true)]
+      (is (nil? (stylefy/init)))
+      (stylefy/use-style {:color "red"})
+      (is (true? @dom-update-requested?)))))
 
 (deftest font-face
   (is (= (css {:pretty-print? false}
@@ -238,22 +327,62 @@
                                   {:background-color "blue"}]))
          "@keyframes simple-animation{from{background-color:red}to{background-color:blue}}")))
 
+(deftest update-keyframes
+  (reset! stylefy.impl.dom/keyframes-in-use {})
+  (stylefy/keyframes "animation-a"
+                     [:from
+                      {:background-color "red"}]
+                     [:to
+                      {:background-color "blue"}])
+
+  (stylefy/keyframes "animation-a"
+                     [:from
+                      {:background-color "blue"}]
+                     [:to
+                      {:background-color "red"}])
+
+  (stylefy/keyframes "animation-b"
+                     [:from
+                      {:background-color "blue"}]
+                     [:to
+                      {:background-color "red"}])
+
+  (is (= (count (keys @stylefy.impl.dom/keyframes-in-use))
+         2))
+
+  (is (= @stylefy.impl.dom/keyframes-in-use
+         {"animation-a" (css (stylefy/keyframes "animation-a"
+                                                [:from
+                                                 {:background-color "blue"}]
+                                                [:to
+                                                 {:background-color "red"}]))
+          "animation-b" (css (stylefy/keyframes "animation-b"
+                                                [:from
+                                                 {:background-color "blue"}]
+                                                [:to
+                                                 {:background-color "red"}]))})))
+
 (deftest tag
   (reset! stylefy.impl.dom/custom-tags-in-use [])
   (is (= (stylefy/tag "code"
                       {:background-color :lightyellow})
-         {::stylefy.impl.dom/tag-name       "code"
-          ::stylefy.impl.dom/tag-properties {:background-color :lightyellow}}))
+         {:stylefy.impl.dom/tag-name "code"
+          :stylefy.impl.dom/tag-properties {:background-color :lightyellow}}))
   (is (= @stylefy.impl.dom/custom-tags-in-use
-         [{:stylefy.impl.dom/tag-name "code", :stylefy.impl.dom/tag-properties {:background-color :lightyellow}}])))
+         [{:stylefy.impl.dom/css "code {\n  background-color: lightyellow;\n}"}])))
 
 (deftest class
   (is (= (stylefy/class "background-transition"
                         {:transition "background-color 1s;"})
          {::stylefy.impl.dom/class-name "background-transition"
-          ::stylefy.impl.dom/class-properties {:transition "background-color 1s;"}})))
+          ::stylefy.impl.dom/class-properties {:transition "background-color 1s;"}}))
+  (is (= @stylefy.impl.dom/custom-classes-in-use
+         [{:stylefy.impl.dom/css ".background-transition {\n  transition: background-color 1s;;\n}"}])))
 
 (deftest prepare-styles
+  (testing "Return value"
+    (is (nil? (stylefy/prepare-styles [{:foo :bar} nil {:foo :bar}]))))
+
   (testing "Good argument"
     (try
       (stylefy/prepare-styles [{:foo :bar} nil {:foo :bar}])
@@ -274,3 +403,29 @@
       (is false "Expected an error to be thrown.")
       (catch js/Error e
         (is true "Error was thrown as expected")))))
+
+(deftest prepare-style
+  (let [style {:background-color :red}]
+    (testing "Return value"
+      (is (= (stylefy/prepare-style style) style)))
+
+    (testing "Good argument"
+      (try
+        (is (= (stylefy/prepare-style style) style))
+        (is true "Error was not thrown as expected")
+        (catch js/Error e
+          (is false "Error was thrown"))))
+
+    (testing "Good nil argument"
+      (try
+        (is (nil? (stylefy/prepare-style nil)))
+        (is true "Error was not thrown as expected")
+        (catch js/Error e
+          (is false "Error was thrown"))))
+
+    (testing "Bad argument: vector of styles"
+      (try
+        (stylefy/prepare-style [style style])
+        (is false "Expected an error to be thrown.")
+        (catch js/Error e
+          (is true "Error was thrown as expected"))))))
