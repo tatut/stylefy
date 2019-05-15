@@ -1,12 +1,12 @@
 (defproject stylefy "1.13.1"
   :description "Library for styling UI components"
   :url "https://github.com/Jarzka/stylefy"
-  :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.9.946"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
+                 [org.clojure/clojurescript "1.10.520"]
                  [prismatic/dommy "1.1.0"]
-                 [reagent "0.7.0"]
-                 [garden "1.3.6"]
-                 [org.clojure/core.async "0.3.443"]]
+                 [reagent "0.8.1"]
+                 [garden "1.3.9"]
+                 [org.clojure/core.async "0.4.490"]]
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-doo "0.1.7"]
             [lein-codox "0.10.6"]]
