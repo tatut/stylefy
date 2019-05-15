@@ -162,3 +162,14 @@
                                                 :custom-selector (conversion/class-selector (::class-name custom-class-definition))})})
     (request-asynchronous-dom-update)
     custom-class-definition))
+
+(defn init
+  "DOM initializations at startup."
+  [options]
+  (when @stylefy-initialised?
+    (utils/warn "Attempted to initialise stylefy more than once."))
+  (init-multi-instance options)
+  (init-cache options)
+  (reset! stylefy-initialised? true)
+  ;; Update can be synchronous on init
+  (update-dom))
