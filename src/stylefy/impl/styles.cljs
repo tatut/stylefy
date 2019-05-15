@@ -80,10 +80,13 @@
                         (str/join " " (concat [html-attributes-class] with-classes [style-hash]))
 
                         (vector? html-attributes-class)
-                        (str/join " " (concat html-attributes-class with-classes [style-hash]))))
+                        (str/join " " (concat html-attributes-class with-classes [style-hash]))
+
+                        :else nil))
         final-html-attributes (merge
                                 html-attributes
-                                (when (not (empty? final-class)) {:class final-class}))]
+                                (when (seq final-class)
+                                  {:class final-class}))]
 
     (assert (or (nil? html-attributes-class)
                 (string? html-attributes-class)
