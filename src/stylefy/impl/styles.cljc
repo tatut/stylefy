@@ -1,5 +1,5 @@
 (ns stylefy.impl.styles
-  (:require [stylefy.impl.dom :as dom]
+  (:require #?(:cljs [stylefy.impl.dom :as dom])
             [garden.core :refer [css]]
             [clojure.string :as str]
             [stylefy.impl.utils :as utils]
@@ -22,15 +22,12 @@
 (defn- check-custom-class-prefix
   "Checks that the value is valid and returns as properly formatted prefix."
   [custom-class-prefix]
-  (assert (or
-            (nil? custom-class-prefix)
-            (string? custom-class-prefix)
-            (keyword? custom-class-prefix))
-          (str "Custom class prefix should be either string, keyword or nil, got: " (pr-str custom-class-prefix)))
-
   (cond (nil? custom-class-prefix) default-class-prefix
         (string? custom-class-prefix) custom-class-prefix
-        (keyword? custom-class-prefix) (name custom-class-prefix)))
+        (keyword? custom-class-prefix) (name custom-class-prefix)
+        :else (assert false
+                      (str "Custom class prefix should be either string, keyword or nil, got: "
+                           (pr-str custom-class-prefix)))))
 
 (defn hash-style [style]
   (when (not (empty? style))
@@ -55,12 +52,13 @@
                          default-class-prefix)]
       (str class-prefix "_" (hash hashable-style)))))
 
-(defn- create-style! [{:keys [props hash] :as style}]
-  (dom/save-style! {:props props :hash hash})
+#?(:cljs
+   (defn- create-style! [{:keys [props hash] :as style}]
+     (dom/save-style! {:props props :hash hash})
 
-  ;; Create sub-styles (if any)
-  (doseq [sub-style (vals (:stylefy.core/sub-styles props))]
-    (create-style! {:props sub-style :hash (hash-style sub-style)})))
+     ;; Create sub-styles (if any)
+     (doseq [sub-style (vals (:stylefy.core/sub-styles props))]
+       (create-style! {:props sub-style :hash (hash-style sub-style)}))))
 
 (defn- prepare-style-return-value
   "Given a style, hash and options, returns HTML attributes for a Hiccup component,
@@ -101,7 +99,7 @@
 (defn- style-return-value [style style-hash options]
   (let [return-map (prepare-style-return-value style style-hash options)]
     (if (or (empty? style)
-            (dom/style-in-dom? style-hash))
+            #?(:cljs (dom/style-in-dom? style-hash) :clj false))
       return-map
       ;; The style definition has not been added into the DOM yet, so return the style props
       ;; as inline style. Inline style gets replaced soon as the style definition
@@ -140,16 +138,17 @@
                      (every? string? with-classes-style)))
             (str "with-classes argument inside style map must be a vector of strings, got: " (pr-str with-classes-style)))
 
-    (dom/check-stylefy-initialisation)
+    #?(:cljs (dom/check-stylefy-initialisation))
 
     (let [style-with-global-vendors (when-not (empty? style) (add-global-vendors style))
           style-hash (hash-style style-with-global-vendors)
-          already-created (dom/style-by-hash style-hash)]
+          already-created #?(:cljs (dom/style-by-hash style-hash) :clj nil)]
 
-      (when (and (not (empty? style-with-global-vendors))
-                 (some? style-hash)
-                 (not already-created))
-        (create-style! {:props style-with-global-vendors :hash style-hash}))
+      #?(:cljs
+         (when (and (not (empty? style-with-global-vendors))
+                    (some? style-hash)
+                    (not already-created))
+           (create-style! {:props style-with-global-vendors :hash style-hash})))
 
       (style-return-value style-with-global-vendors style-hash options))))
 
@@ -157,7 +156,7 @@
   (let [resolved-sub-style (get (:stylefy.core/sub-styles style) sub-style)]
     (if resolved-sub-style
       (use-style! resolved-sub-style options)
-      (.warn js/console (str "Sub-style " (pr-str sub-style) " not found in style: " (pr-str style))))))
+      (utils/warn "Sub-style " (pr-str sub-style) " not found in style: " (pr-str style)))))
 
 (defn sub-style
   [style & sub-styles]
@@ -167,21 +166,22 @@
 
     (if resolved-sub-style
       resolved-sub-style
-      (.warn js/console (str "Sub-style " (pr-str sub-styles) " not found in style: " (pr-str style))))))
+      (utils/warn "Sub-style " (pr-str sub-styles) " not found in style: " (pr-str style)))))
 
-(defn prepare-styles
-  ([styles]
-   (prepare-styles styles {:request-dom-update-after-done? true}))
-  ([styles {:keys [request-dom-update-after-done?] :as options}]
-   (let [styles (remove nil? styles)]
+#?(:cljs
+   (defn prepare-styles
+     ([styles]
+      (prepare-styles styles {:request-dom-update-after-done? true}))
+     ([styles {:keys [request-dom-update-after-done?] :as options}]
+      (let [styles (remove nil? styles)]
 
-     (doseq [style styles]
-       (use-style! style {})
-       (when-let [sub-styles (vals (:stylefy.core/sub-styles style))]
-         (prepare-styles sub-styles {:request-dom-update-after-done? false}))))
+        (doseq [style styles]
+          (use-style! style {})
+          (when-let [sub-styles (vals (:stylefy.core/sub-styles style))]
+            (prepare-styles sub-styles {:request-dom-update-after-done? false}))))
 
-   (when request-dom-update-after-done?
-     (dom/update-dom-if-requested))))
+      (when request-dom-update-after-done?
+        (dom/update-dom-if-requested)))))
 
 (defn init-global-vendor-prefixes [options]
   (let [global-vendor-prefixes-options (:global-vendor-prefixes options)]
