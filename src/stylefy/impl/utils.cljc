@@ -1,11 +1,9 @@
 (ns stylefy.impl.utils
-  (:require [dommy.core :as dommy]
-            [garden.core :refer [css]]
+  (:require [garden.core :refer [css]]
             [garden.color :as color]
             [garden.types :as types]
             [garden.stylesheet :refer [at-media at-keyframes at-font-face]]
-            [clojure.string :as str])
-  (:require-macros [reagent.ratom :refer [run!]]))
+            [clojure.string :as str]))
 
 (defn filter-css-props
   "Removes stylefy's namespaced keywords from the given map."
