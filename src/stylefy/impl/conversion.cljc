@@ -31,8 +31,7 @@
                     (str "Mode must be specified as a keyword or string beginning with colon, got: " (pr-str mode-name)))
             (when (and (string? mode-name)
                        (> (count (str/split mode-name " ")) 1))
-              #?(:cljs (.warn js/console (str "Incorrect mode detected, should not contain spaces. Mode was: " (pr-str mode-name)))
-                 :clj (println "Incorrect mode detected, should not contain spaces. Mode was: " (pr-str mode-name))))
+              (utils/warn "Incorrect mode detected, should not contain spaces. Mode was: " (pr-str mode-name)))
             [(keyword (str "&" mode-name)) (get modes mode-name)])
           (keys modes))))
 
