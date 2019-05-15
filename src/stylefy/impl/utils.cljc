@@ -16,6 +16,6 @@
 
 (defn is-garden-value? [value]
   ; Note: types/CSSAtRule is not included since it is a selector, not a valid CSS value.
-  (or (instance? types/CSSUnit value)
-      (instance? color/CSSColor value)
-      (instance? types/CSSFunction value)))
+  (or (instance? #?(:cljs types/CSSUnit :clj garden.types.CSSUnit) value)
+      (instance? #?(:cljs color/CSSColor :clj garden.color.CSSColor) value)
+      (instance? #?(:cljs types/CSSFunction :clj garden.types.CSSFunction) value)))
